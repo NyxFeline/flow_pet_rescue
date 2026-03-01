@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType    = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////
+
+enum UserRole {
+  user
+  rescuer
+  admin
+}
+
+enum SosStatus {
+  new
+  in_progress
+  resolved
+  cancelled
+}
+
+enum AdoptionStatus {
+  pending
+  interview
+  approved
+  rejected
+}
+
+enum DonationStatus {
+  pending
+  confirmed
+  rejected
+  expired
+}
+
+//////////////////////////////////////////////////
+// USER
+//////////////////////////////////////////////////
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password_hash   String
+  full_name       String?
+  phone_number    String?
+  avatar_url      String?
+
+  role            UserRole @default(user)
+  is_verified     Boolean  @default(false)
+
+  verification_docs Json?
+  bank_info        Json?
+
+  points          Int      @default(0)
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  reporter_sos    SosReport[] @relation("Reporter")
+  rescuer_sos     SosReport[] @relation("Rescuer")
+
+  pets            Pet[]
+  adoption_apps   AdoptionApplication[]
+
+  donations_sent  Donation[] @relation("Donor")
+  donations_recv  Donation[] @relation("Recipient")
+
+  messages        Message[]
+
+  conversation_participants ConversationParticipant[]
+  refresh_token_hash String?
+}
+
+//////////////////////////////////////////////////
+// SOS REPORT
+//////////////////////////////////////////////////
+
+model SosReport {
+  id          String     @id @default(uuid())
+
+  reporter_id String?
+  rescuer_id  String?
+
+  reporter    User?      @relation("Reporter", fields: [reporter_id], references: [id])
+  rescuer     User?      @relation("Rescuer", fields: [rescuer_id], references: [id])
+
+  images      Json
+  description String?
+
+  status      SosStatus  @default(new)
+
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+}
+
+//////////////////////////////////////////////////
+// PET
+//////////////////////////////////////////////////
+
+model Pet {
+  id            String   @id @default(uuid())
+
+  shelter_id    String
+  shelter       User     @relation(fields: [shelter_id], references: [id])
+
+  name          String
+  species       String?
+  age           Int?
+  gender        String?
+  is_vaccinated Boolean  @default(false)
+
+  description   String?
+  images        Json?
+
+  status        String   @default("available")
+
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  adoption_apps AdoptionApplication[]
+}
+
+//////////////////////////////////////////////////
+// ADOPTION APPLICATION
+//////////////////////////////////////////////////
+
+model AdoptionApplication {
+  id             String          @id @default(uuid())
+
+  pet_id         String
+  adopter_id     String
+
+  pet            Pet             @relation(fields: [pet_id], references: [id])
+  adopter        User            @relation(fields: [adopter_id], references: [id])
+
+  status         AdoptionStatus  @default(pending)
+
+  application_data Json
+
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+
+  @@unique([pet_id, adopter_id])
+}
+
+//////////////////////////////////////////////////
+// DONATION
+//////////////////////////////////////////////////
+
+model Donation {
+  id              String          @id @default(uuid())
+
+  donor_id        String?
+  recipient_id    String?
+
+  donor           User?           @relation("Donor", fields: [donor_id], references: [id])
+  recipient       User?           @relation("Recipient", fields: [recipient_id], references: [id])
+
+  amount          Decimal
+  message         String?
+
+  status          DonationStatus  @default(pending)
+
+  transaction_ref String?         @unique
+  proof_image_url String?
+
+  expires_at      DateTime?
+  confirmed_at    DateTime?
+
+  created_at      DateTime        @default(now())
+}
+
+//////////////////////////////////////////////////
+// CONVERSATION
+//////////////////////////////////////////////////
+
+model Conversation {
+  id           String      @id @default(uuid())
+  created_at   DateTime    @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+//////////////////////////////////////////////////
+// CONVERSATION PARTICIPANT
+//////////////////////////////////////////////////
+
+model ConversationParticipant {
+  conversation_id String
+  user_id         String
+
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  user            User         @relation(fields: [user_id], references: [id])
+
+  joined_at       DateTime     @default(now())
+
+  @@id([conversation_id, user_id])
+}
+
+//////////////////////////////////////////////////
+// MESSAGE
+//////////////////////////////////////////////////
+
+model Message {
+  id              String   @id @default(uuid())
+
+  conversation_id String
+  sender_id       String?
+
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  sender          User?        @relation(fields: [sender_id], references: [id])
+
+  content         String
+  is_read         Boolean  @default(false)
+
+  created_at      DateTime @default(now())
+}
