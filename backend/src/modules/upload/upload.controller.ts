@@ -5,15 +5,11 @@ import { UploadService } from "./upload.service";
 
 @Controller("upload")
 export class UploadController {
-    constructor(private readonly uploadService: UploadService) {
-        FileInterceptor("file", {
-            limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
-        });
-    }
+    constructor(private readonly uploadService: UploadService) {}
 
     @Post()
     @UseGuards(JwtGuard) // Protect this route with JWT authentication
-    @UseInterceptors(FileInterceptor("file")) // Use FileInterceptor to handle file uploads
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
     
     async uploadFile(@UploadedFile() file: Express.Multer.File): Promise<{ url: string }> {
         const url = await this.uploadService.uploadFile(file); // Upload the file and get the URL

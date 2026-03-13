@@ -91,8 +91,10 @@ model SosReport {
   reporter    User?      @relation("Reporter", fields: [reporter_id], references: [id])
   rescuer     User?      @relation("Rescuer", fields: [rescuer_id], references: [id])
 
-  images      Json
+  images      Json       @default("[]")
   description String?
+
+  location    Unsupported("geography(Point, 4326)")
 
   status      SosStatus  @default(new)
 
