@@ -8,6 +8,7 @@ import { validationSchema } from './config/validation'
 import { UploadModule } from './modules/upload/upload.module'
 import { SosModule } from './modules/sos/sos.module'
 import { PetsModule } from './modules/pets/pets.module'
+import { AdoptionModule } from './modules/adoption/adoption.module'
 
 @Module({
     imports: [
@@ -17,7 +18,8 @@ import { PetsModule } from './modules/pets/pets.module'
         AuthModule, 
         UsersModule,
         UploadModule,
-        PetsModule
+        PetsModule,
+        AdoptionModule
     ],
 })
 export class AppModule {}

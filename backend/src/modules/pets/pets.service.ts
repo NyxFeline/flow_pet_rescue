@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreatePetDto } from "./dto/createPet.dto";
 import { FindPetsQueryDto } from "./dto/findPetsQuery.dto";
@@ -82,6 +82,16 @@ export class PetsService {
         if (pet.shelter_id !== userId && role !== "admin") {
             throw new ForbiddenException("You do not have permission to delete this pet");
         }
+
+        const activeApps = await this.prisma.adoptionApplication.count({
+            where: {
+                pet_id: petId,
+                status: { in: ['pending', 'interview']}
+            }
+        })
+
+        if (activeApps > 0)
+            throw new BadRequestException('Cannot delete pet with active adoption applications');
 
         return this.prisma.pet.delete({ where: { id: petId } });
     }
