@@ -39,6 +39,16 @@ enum DonationStatus {
   expired
 }
 
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum ParticipantRole {
+  ADMIN
+  MEMBER
+}
+
 //////////////////////////////////////////////////
 // USER
 //////////////////////////////////////////////////
@@ -184,8 +194,11 @@ model Donation {
 //////////////////////////////////////////////////
 
 model Conversation {
-  id           String      @id @default(uuid())
-  created_at   DateTime    @default(now())
+  id           String           @id @default(uuid())
+  type         ConversationType @default(DIRECT)
+  name         String?          // null nếu DIRECT, bắt buộc nếu GROUP
+  created_by   String           // userId người tạo
+  created_at   DateTime         @default(now())
 
   participants ConversationParticipant[]
   messages     Message[]
@@ -198,11 +211,11 @@ model Conversation {
 model ConversationParticipant {
   conversation_id String
   user_id         String
+  role            ParticipantRole @default(MEMBER)
+  joined_at       DateTime        @default(now())
 
-  conversation    Conversation @relation(fields: [conversation_id], references: [id])
-  user            User         @relation(fields: [user_id], references: [id])
-
-  joined_at       DateTime     @default(now())
+  conversation Conversation @relation(fields: [conversation_id], references: [id])
+  user         User         @relation(fields: [user_id], references: [id])
 
   @@id([conversation_id, user_id])
 }

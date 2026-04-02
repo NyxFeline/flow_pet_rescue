@@ -9,6 +9,7 @@ import { UploadModule } from './modules/upload/upload.module'
 import { SosModule } from './modules/sos/sos.module'
 import { PetsModule } from './modules/pets/pets.module'
 import { AdoptionModule } from './modules/adoption/adoption.module'
+import { ChatModule } from './modules/chat/chat.module'
 
 @Module({
     imports: [
@@ -19,7 +20,8 @@ import { AdoptionModule } from './modules/adoption/adoption.module'
         UsersModule,
         UploadModule,
         PetsModule,
-        AdoptionModule
+        AdoptionModule,
+        ChatModule,
     ],
 })
 export class AppModule {}
