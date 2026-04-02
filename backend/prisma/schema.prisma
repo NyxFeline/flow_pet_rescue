@@ -49,6 +49,13 @@ enum ParticipantRole {
   MEMBER
 }
 
+enum NotificationType {
+  sos_new
+  sos_accepted
+  chat_message
+  donation_confirmed
+}
+
 //////////////////////////////////////////////////
 // USER
 //////////////////////////////////////////////////
@@ -86,6 +93,8 @@ model User {
 
   conversation_participants ConversationParticipant[]
   refresh_token_hash String?
+
+  notifications Notification[]
 }
 
 //////////////////////////////////////////////////
@@ -237,4 +246,21 @@ model Message {
   is_read         Boolean  @default(false)
 
   created_at      DateTime @default(now())
+}
+
+//////////////////////////////////////////////////
+// NOTIFICATION
+//////////////////////////////////////////////////
+
+model Notification {
+  id          String   @id @default(uuid())
+
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id])
+
+  type        NotificationType @default(chat_message)
+  payload     Json
+
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
 }

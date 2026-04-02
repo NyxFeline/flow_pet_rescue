@@ -3,10 +3,15 @@ import { CreateSosDto } from "./dto/CreateSos.dto";
 import { PrismaService } from "src/prisma/prisma.service";
 import { NotificationGateway } from "../notification/notification.gateway";
 import { SosStatus } from '@prisma/client';
+import { NotificationService } from "../notification/notification.service";
 
 @Injectable()
 export class SosService {
-    constructor( private prisma: PrismaService, private notificationGateway: NotificationGateway) {}
+    constructor(
+        private prisma: PrismaService,
+        private notificationGateway: NotificationGateway,
+        private notificationService: NotificationService, // thêm
+    ) {}
 
     // Tạo SOS mới
     async create(userId: string, dto: CreateSosDto) {
@@ -39,6 +44,20 @@ export class SosService {
 
         const record = resultSos[0];
         this.notificationGateway.server.emit('sos:new', record);
+
+        const nearbyRescuers = await this.prisma.user.findMany({
+            where: { role: 'rescuer' },
+            select: { id: true },
+        });
+        await Promise.all(
+            nearbyRescuers.map((r) =>
+                this.notificationService.create(r.id, 'sos_new', {
+                    sosId: record.id,
+                    description: dto.description,
+                }),
+            ),
+        );
+
         return record;
     }
 
@@ -75,7 +94,17 @@ export class SosService {
             throw new ConflictException('SOS not found or already accepted');
         }
 
-        return this.prisma.sosReport.findUnique({ where: { id: sosId } });
+        const sos = await this.prisma.sosReport.findUnique({ where: { id: sosId } });
+
+        // Notify reporter
+        if (sos?.reporter_id) {
+            await this.notificationService.create(sos.reporter_id, 'sos_accepted', {
+                sosId,
+                rescuerId,
+            });
+        }
+
+        return sos;
     }
 
     // Cập nhật trạng thái SOS

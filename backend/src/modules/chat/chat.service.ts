@@ -1,9 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
+import { NotificationService } from "../notification/notification.service";
 
 @Injectable()
 export class ChatService{
-    constructor(private prisma: PrismaService){}
+    constructor(
+        private prisma: PrismaService,
+        private notificationService: NotificationService,
+    ) {}
 
     private async findConversationWithParticipants(conversationId: string) {
         const conv = await this.prisma.conversation.findUnique({
@@ -109,17 +113,21 @@ export class ChatService{
             nextCursor: hasMore ? data[data.length - 1].id : null,
         };
     }
-    async sendMessage(conversationId: string, senderId: string, content: string){
+    
+    async sendMessage(conversationId: string, senderId: string, content: string) {
         if (content.trim().length === 0)
             throw new BadRequestException("Message content cannot be empty");
 
+        // 1. Lấy conversation (đã có participants)
         const conv = await this.findConversationWithParticipants(conversationId);
 
+        // 2. Check quyền
         const isMember = conv.participants.some(p => p.user_id === senderId);
         if (!isMember)
             throw new ForbiddenException("You are not a member of this conversation");
 
-        return this.prisma.message.create({
+        // 3. Lưu message
+        const message = await this.prisma.message.create({
             data: {
                 conversation_id: conversationId,
                 sender_id: senderId,
@@ -131,6 +139,23 @@ export class ChatService{
                 }
             }
         });
+
+        // 4. Notify recipients
+        const recipients = conv.participants
+            .filter(p => p.user_id !== senderId)
+            .map(p => p.user_id);
+
+        await Promise.all(
+            recipients.map((recipientId) =>
+                this.notificationService.create(recipientId, 'chat_message', {
+                    conversationId,
+                    senderId,
+                    preview: content.slice(0, 100),
+                }),
+            ),
+        );
+
+        return message;
     }
 
     async markRead(conversationId: string, userId: string){

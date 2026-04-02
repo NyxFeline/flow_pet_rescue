@@ -3,13 +3,13 @@ import { SosController } from "./sos.controller";
 import { SosService } from "./sos.service";
 import { SosGateway } from "./sos.gateway";
 import { PrismaModule } from "src/prisma/prisma.module";
-import { NotificationModule } from "../notification/notification.module";
+import { NotificationModule } from '../notification/notification.module';
 import { RolesGuard } from "../auth/guards/roles.guard";
 
 @Module({
     imports: [PrismaModule, NotificationModule],
     controllers: [SosController],
     providers: [SosService, SosGateway, RolesGuard],
-    exports: [SosService, SosGateway, NotificationModule]
+    exports: [SosService, SosGateway],
 })
 export class SosModule {}

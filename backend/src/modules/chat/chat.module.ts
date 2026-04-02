@@ -4,9 +4,10 @@ import { ChatGateway } from './chat.gateway';
 import { ChatController } from './chat.controller';
 import { JwtModule } from '@nestjs/jwt/dist/jwt.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-    imports: [PrismaModule, JwtModule],
+    imports: [PrismaModule, JwtModule, NotificationModule],
     controllers: [ChatController],
     providers: [ChatService, ChatGateway],
 })
